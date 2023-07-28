@@ -52,8 +52,12 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
     return img, ratio, (dw, dh)
 
-classes_to_filter = None  #You can give list of classes to filter by name, Be happy you don't have to put class number. ['train','person' ]
 
+classes_to_filter = ['Coverall']  #You can give list of classes to filter by name, Be happy you don't have to put class number. ['train','person' ]
+all_class_names = ['Safety Helmet', 'No Safety Helmet', 'Coverall', 'No Coverall', 'Safety Gloves', 'No Safety Gloves', 'Safety Shoes', 'No Safety Shoes', 'Drilling Area', 'Safety Glasses', 'No Safety Glasses', 'Person', 'Harness']
+classes_to_filter = ['Coverall']
+specific_class_indices = [all_class_names.index(class_name) for class_name in classes_to_filter]
+print("Specific Class Indices: ", specific_class_indices)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 opt = {
 
@@ -63,7 +67,7 @@ opt = {
     "conf-thres": 0.25,  # confidence threshold for inference.
     "iou-thres": 0.45,  # NMS IoU threshold for inference.
     "device": 'cpu',  # device to run our model i.e. 0 or 0,1,2,3 or cpu
-    "classes": None  # list of classes to filter or None
+    "classes": ['Coverall']  # list of classes to filter or None
 
 }
 '''
@@ -140,8 +144,8 @@ def video_detection(path_x='' ,conf_=0.25):
 
           # conf = 0.5
           total_detections = 0
-          pred = non_max_suppression(pred, conf_, opt['iou-thres'], classes= classes, agnostic= False)
-
+          #pred = non_max_suppression(pred, conf_, opt['iou-thres'], classes= classes, agnostic= False)
+          pred = non_max_suppression(pred, conf_, opt['iou-thres'], classes=specific_class_indices, agnostic=False)
           t2 = time_synchronized()
           for i, det in enumerate(pred):
             s = ''
