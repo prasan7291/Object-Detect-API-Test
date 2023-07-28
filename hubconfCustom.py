@@ -54,11 +54,11 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
 
 classes_to_filter = None  #You can give list of classes to filter by name, Be happy you don't have to put class number. ['train','person' ]
 
-
+current_dir = os.path.dirname(os.path.abspath(__file__))
 opt = {
 
-    "weights": "C:/Object-Detect-API-Test/best.pt",  # Path to weights file default weights are for nano model
-    "yaml": "C:/Object-Detect-API-Test/data/SafeVision_Detect.yaml",
+    "weights": os.path.join(current_dir, "best.pt"),  # Path to weights file default weights are for nano model
+    "yaml": os.path.join(current_dir, "data/SafeVision_Detect.yaml"),
     "img-size": 640,  # default image size
     "conf-thres": 0.25,  # confidence threshold for inference.
     "iou-thres": 0.45,  # NMS IoU threshold for inference.
