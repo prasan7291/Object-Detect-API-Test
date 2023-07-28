@@ -57,8 +57,8 @@ classes_to_filter = None  #You can give list of classes to filter by name, Be ha
 
 opt = {
 
-    "weights": "C:/YOLO Flask Reference/VOLOv7 WIth Flask/FlaskApplication_YOLOv7/FlaskApplication_YOLOv7/yolov7/best.pt",  # Path to weights file default weights are for nano model
-    "yaml": "C:/YOLO Flask Reference/VOLOv7 WIth Flask/FlaskApplication_YOLOv7/FlaskApplication_YOLOv7/yolov7/data/SafeVision_Detect.yaml",
+    "weights": "C:/Object-Detect-API-Test/best.pt",  # Path to weights file default weights are for nano model
+    "yaml": "C:/Object-Detect-API-Test/data/SafeVision_Detect.yaml",
     "img-size": 640,  # default image size
     "conf-thres": 0.25,  # confidence threshold for inference.
     "iou-thres": 0.45,  # NMS IoU threshold for inference.
