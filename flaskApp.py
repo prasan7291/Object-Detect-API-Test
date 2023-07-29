@@ -81,7 +81,7 @@ def generate_frames(path_x = '',conf_= 0.25):
     #yolo_output varaible stores the output for each detection, yolo_output will contain all 4 things
 
     yolo_output = video_detection(path_x,conf_)
-    for detection_,FPS_,xl,yl in yolo_output:
+    for detection_,FPS_,xl,yl,no_helmet in yolo_output:
         ref,buffer=cv2.imencode('.jpg',detection_)
         global frames
         frames = str(FPS_)
@@ -89,6 +89,9 @@ def generate_frames(path_x = '',conf_= 0.25):
         sizeImage = str(xl[0])
         global detectedObjects
         detectedObjects = str(yl)
+        global no_helmet_count
+        no_helmet_count = str(no_helmet)
+        print("No Helmet Count: ", no_helmet_count)
         # Any Flask application requires the encoded image to be converted into bytes and rendered into an HTML page
         #.tobytes  convert the encoded image into bytes, We will display the individual frames using Yield keyword,
         #we will loop over all individual frames and display them as video
@@ -194,7 +197,7 @@ def size_fun():
 @app.route('/detectionCount',methods = ['GET'])
 def detect_fun():
     global detectedObjects
-    return jsonify(detectCount=detectedObjects)
+    return jsonify(detectCount=detectedObjects,NoHelmetCount=no_helmet_count)
 
 @app.route('/sizegenerateweb',methods = ['GET'])
 def size_fun_web():
