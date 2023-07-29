@@ -53,9 +53,9 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
     return img, ratio, (dw, dh)
 
 
-classes_to_filter = ['Coverall']  #You can give list of classes to filter by name, Be happy you don't have to put class number. ['train','person' ]
+#classes_to_filter = ['Coverall']  #You can give list of classes to filter by name, Be happy you don't have to put class number. ['train','person' ]
 all_class_names = ['Safety Helmet', 'No Safety Helmet', 'Coverall', 'No Coverall', 'Safety Gloves', 'No Safety Gloves', 'Safety Shoes', 'No Safety Shoes', 'Drilling Area', 'Safety Glasses', 'No Safety Glasses', 'Person', 'Harness']
-classes_to_filter = ['Coverall']
+classes_to_filter = ['Safety Helmet','Coverall']
 specific_class_indices = [all_class_names.index(class_name) for class_name in classes_to_filter]
 print("Specific Class Indices: ", specific_class_indices)
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -124,6 +124,9 @@ def video_detection(path_x='' ,conf_=0.25):
       for class_name in opt['classes']:
         classes.append(opt['classes'].index(class_name))
 
+    coverall_count = 0
+    helmet_count = 0
+
     for j in range(nframes):
         
 
@@ -151,6 +154,7 @@ def video_detection(path_x='' ,conf_=0.25):
             s = ''
             s += '%gx%g ' % img.shape[2:]  # print string
             gn = torch.tensor(img0.shape)[[1, 0, 1, 0]]
+            coverall_count = 0
             if len(det):
               det[:, :4] = scale_coords(img.shape[2:], det[:, :4], img0.shape).round()
 
@@ -158,15 +162,23 @@ def video_detection(path_x='' ,conf_=0.25):
                 n = (det[:, -1] == c).sum()  # detections per class
                 total_detections += int(n)
                 s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
+                if names[int(c)] == 'Coverall':
+                    coverall_count += int(n)
 
               for *xyxy, conf, cls in reversed(det):
 
                 label = f'{names[int(cls)]} {conf:.2f}'
                 plot_one_box(xyxy, img0, label=label, color=colors[int(cls)], line_thickness=3)
+                '''if names[int(cls)] == 'Coverall':
+                    coverall_count += 1'''
+
           fps_x = int((j+1)/(time.time() - start_time))
           # print(f"{j+1}/{nframes} frames processed")
           # print(conf)
-          yield img0, fps_x, img0.shape, total_detections
+          print("Coverall Count in Frame {}: {}".format(j, coverall_count))
+          #print("Helmet Count: ", helmet_count)
+          # yield img0, fps_x, img0.shape, total_detections
+          yield img0, fps_x, img0.shape, coverall_count
           # cv2.imshow('hello',img0)
           # cv2.waitKey(1) & 0xFF == ord("q")
 
