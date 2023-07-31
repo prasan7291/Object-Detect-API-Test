@@ -241,7 +241,7 @@ def split_video_into_chunks(video_path):
         subclip.write_videofile(output_filename, codec='libx264')
 
     print(f"Video split into {num_chunks} parts.")
-@app.route('/split_video', methods=['POST'])
+'''@app.route('/split_video', methods=['POST'])
 def split_video():
     video_file = request.files.get('file')
     if not video_file:
@@ -255,7 +255,45 @@ def split_video():
     split_video_into_chunks(video_file_path)
 
     # You can return a success message or any other information as needed
+    return jsonify(message="Video split into chunks successfully.")'''
+
+@app.route('/split_video', methods=['GET', 'POST'])
+def split_video():
+    video_file = request.files.get('file')
+    if not video_file:
+        return jsonify(message="Please upload a video first.")
+
+    # Save the uploaded video file to a specific location
+    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
+    video_file.save(video_file_path)
+
+    # Call the function to split the video into chunks
+    split_video_into_chunks(video_file_path)
+    # Return the list of file parts as a JSON response
     return jsonify(message="Video split into chunks successfully.")
+@app.route('/split_video_details', methods=['GET'])
+def split_video_details():
+    output_folder = os.path.join(app.config['UPLOAD_FOLDER'], "Split Videos")
+    print("Output Folder: ", output_folder)
+    files_and_durations = []
+    ip_address = request.url_root
+
+    for filename in os.listdir(output_folder):
+        file_path = os.path.join(output_folder, filename)
+        duration_in_secs = VideoFileClip(file_path).duration
+        duration_in_mins = round(duration_in_secs / 60, 2)
+        file_url = url_for('static', filename=os.path.join('files', 'Split Videos', filename))
+        print("File URL: ", file_url)
+        file_url_with_ip = ip_address + file_url
+        files_and_durations.append({
+            'file_name': filename,
+            'duration': duration_in_mins,
+            'file_url': file_url_with_ip
+        })
+
+    # Return the list of file parts as a JSON response
+    print("Files and Durations: ", files_and_durations)
+    return jsonify(file_parts=files_and_durations)
 
 
 if __name__ == "__main__":
