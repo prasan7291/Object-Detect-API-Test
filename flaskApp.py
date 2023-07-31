@@ -16,6 +16,7 @@ from wtforms import FileField, SubmitField,StringField,DecimalRangeField,Integer
 from werkzeug.utils import secure_filename
 from wtforms.validators import InputRequired,NumberRange
 import os
+from PIL import Image
 
 # To style our CSS to render the HTML Pages
 from flask_bootstrap import Bootstrap
@@ -240,6 +241,11 @@ def split_video_into_chunks(video_path):
         output_filename = os.path.join(output_folder, f"Part {i + 1}.mp4")
         subclip.write_videofile(output_filename, codec='libx264')
 
+        thumbnail_filename = f"Part {i + 1}_thumbnail.jpg"
+        thumbnail_path = os.path.join(output_folder, thumbnail_filename)
+        thumbnail_image = subclip.get_frame(0)  # Get the first frame of the video part as the thumbnail
+        Image.fromarray(thumbnail_image).save(thumbnail_path)
+
     print(f"Video split into {num_chunks} parts.")
 '''@app.route('/split_video', methods=['POST'])
 def split_video():
@@ -279,18 +285,21 @@ def split_video_details():
     ip_address = request.url_root
 
     for filename in os.listdir(output_folder):
-        file_path = os.path.join(output_folder, filename)
-        duration_in_secs = VideoFileClip(file_path).duration
-        duration_in_mins = round(duration_in_secs / 60, 2)
-        file_url = url_for('static', filename=os.path.join('files', 'Split Videos', filename))
-        print("File URL: ", file_url)
-        file_url_with_ip = ip_address + file_url
-        files_and_durations.append({
-            'file_name': filename,
-            'duration': duration_in_mins,
-            'file_url': file_url_with_ip
-        })
+        if filename.lower().endswith('.mp4'):  # Check if the file has the .mp4 extension
+            file_path = os.path.join(output_folder, filename)
+            duration_in_secs = VideoFileClip(file_path).duration
+            duration_in_mins = round(duration_in_secs / 60, 2)
+            file_url = url_for('static', filename=os.path.join('files', 'Split Videos', filename))
+            print("File URL: ", file_url)
+            file_url_with_ip = ip_address + file_url
+            thumbnail_name = file_url_with_ip.replace(".mp4", "_thumbnail.jpg")  # Generate the thumbnail filename
 
+            files_and_durations.append({
+                'file_name': filename,
+                'duration in mins': duration_in_mins,
+                'file_url': file_url_with_ip,
+                'thumbnail': thumbnail_name
+            })
     # Return the list of file parts as a JSON response
     print("Files and Durations: ", files_and_durations)
     return jsonify(file_parts=files_and_durations)
