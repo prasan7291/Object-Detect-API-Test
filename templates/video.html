@@ -1,10 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta http-equiv = "X-UA-Compatible" content = "IE-Edge">
+    <meta name = "viewport" content = "width = device-width, initial-scale = 1.0">
+    <title>SafeVision Object Detection</title>
+    <script async src="../templates/main.js" onload="OpenCvReady()"></script>
+    <link href="style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300&display=swap" rel="stylesheet">
 </head>
 <body>
-$END$
+  <div class="main-page">
+    <div class="side-line"></div>
+    <div class="side-bar"></div>
+    <div class="right-panel">
+        <div class="Header">
+            <div class="empty-side"></div>
+            <h1> SafeVision Object Detection</h1>
+            <div class="logo-container"><img src = "../templates/logo.png" alt ="" width = "120"></div>
+        </div>
+
+        <div class ="tablet-container">
+            <img id = "tablet-img" src="../templates/tablet_nobg.png" width="800" height="600" alt="">
+            <img src="{{url_for('video')}}" alt="Upload Video" width="740" height="560">
+            <canvas id = "main-canvas" width ="740" height ="540">
+            </canvas>
+        </div>
+    </div>
+  </div>
+  <script src="main.js"></script>
 </body>
 </html>
