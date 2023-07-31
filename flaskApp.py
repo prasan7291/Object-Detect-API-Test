@@ -10,7 +10,7 @@ from flask import Flask, render_template, Response,jsonify,request,session
 # Whether uploading a video file or assigning a confidence value to our object detection model
 
 from flask_wtf import FlaskForm
-
+from moviepy.video.io.VideoFileClip import VideoFileClip
 
 from wtforms import FileField, SubmitField,StringField,DecimalRangeField,IntegerRangeField
 from werkzeug.utils import secure_filename
@@ -25,10 +25,17 @@ import cv2
 
 # Hubconfcustom is the python file which contains the code for our object detection model
 #Video Detection is the Function which performs Object Detection on Input Video
-from hubconfCustom import video_detection
+from hubconfCustom import video_detection, video_splitter
 
 #Video_detection_web is the functon which performs object detection on Live Feed
 from hubconfcustomweb import video_detection_web
+
+import json
+import math
+from flask import Flask, render_template, Response, jsonify, request, session, url_for
+from werkzeug.utils import secure_filename, redirect
+import moviepy
+
 
 #------------------------------------
 #------------------------------------
@@ -76,12 +83,13 @@ class UploadFileForm(FlaskForm):
 frames = 0
 sizeImage = 0
 detectedObjects = 0
+video_file_path=""
 
 def generate_frames(path_x = '',conf_= 0.25):
     #yolo_output varaible stores the output for each detection, yolo_output will contain all 4 things
 
     yolo_output = video_detection(path_x,conf_)
-    for detection_,FPS_,xl,yl,no_helmet in yolo_output:
+    for detection_,FPS_,xl,yl,no_helmet,safety_violations in yolo_output:
         ref,buffer=cv2.imencode('.jpg',detection_)
         global frames
         frames = str(FPS_)
@@ -91,7 +99,9 @@ def generate_frames(path_x = '',conf_= 0.25):
         detectedObjects = str(yl)
         global no_helmet_count
         no_helmet_count = str(no_helmet)
-        print("No Helmet Count: ", no_helmet_count)
+        global total_safety_violations
+        total_safety_violations = str(safety_violations)
+        print("Total Safety Violations: ", total_safety_violations)
         # Any Flask application requires the encoded image to be converted into bytes and rendered into an HTML page
         #.tobytes  convert the encoded image into bytes, We will display the individual frames using Yield keyword,
         #we will loop over all individual frames and display them as video
@@ -152,10 +162,11 @@ def front():
     if form.validate_on_submit():
         #Our uploaded video file path is saved here
         file = form.file.data
+        video_file_path = file
+        #print ("Uploaded File Path: ", video_file_path)
         # conf_ = form.text.data
         #We will save the confidence value from slider into this variable
         conf_ = form.conf_slide.data
-        
         file.save(os.path.join(os.path.abspath(os.path.dirname(__file__)),app.config['UPLOAD_FOLDER'],secure_filename(file.filename))) # Then save the file
         #Use session storage to save video file path and confidence value
         session['video_path'] = os.path.join(os.path.abspath(os.path.dirname(__file__)),app.config['UPLOAD_FOLDER'],secure_filename(file.filename))
@@ -197,7 +208,7 @@ def size_fun():
 @app.route('/detectionCount',methods = ['GET'])
 def detect_fun():
     global detectedObjects
-    return jsonify(detectCount=detectedObjects,NoHelmetCount=no_helmet_count)
+    return jsonify(detectCount=detectedObjects,NoHelmetCount=no_helmet_count,TotalSafetyViolations=total_safety_violations)
 
 @app.route('/sizegenerateweb',methods = ['GET'])
 def size_fun_web():
@@ -209,8 +220,42 @@ def detect_fun_web():
     global detectedObjectsweb
     return jsonify(detectCount=detectedObjectsweb)
 
+ALLOWED_EXTENSIONS = {'mp4'}
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def split_video_into_chunks(video_path):
+    print("split_video_into_chunks function RAN!!!!")
+    video_file = VideoFileClip(video_path)
+    duration = video_file.duration
+    chunk_duration = 1 * 60  # 5 minutes in seconds
+    num_chunks = int(math.ceil(duration / chunk_duration))
+    output_folder = os.path.join(os.path.dirname(video_path), "Split Videos")
+    os.makedirs(output_folder, exist_ok=True)
 
+    for i in range(num_chunks):
+        start_time = i * chunk_duration
+        end_time = min((i + 1) * chunk_duration, duration)
+        subclip = video_file.subclip(start_time, end_time)
+        output_filename = os.path.join(output_folder, f"Part {i + 1}.mp4")
+        subclip.write_videofile(output_filename, codec='libx264')
+
+    print(f"Video split into {num_chunks} parts.")
+@app.route('/split_video', methods=['POST'])
+def split_video():
+    video_file = request.files.get('file')
+    if not video_file:
+        return jsonify(message="Please upload a video first.")
+
+    # Save the uploaded video file to a specific location
+    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
+    video_file.save(video_file_path)
+
+    # Call the function to split the video into chunks
+    split_video_into_chunks(video_file_path)
+
+    # You can return a success message or any other information as needed
+    return jsonify(message="Video split into chunks successfully.")
 
 
 if __name__ == "__main__":
