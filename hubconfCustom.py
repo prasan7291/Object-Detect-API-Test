@@ -18,7 +18,8 @@ from utils.general import check_img_size, check_requirements, check_imshow, non_
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
-
+import time
+import moviepy.editor as mp
 
 def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scaleFill=False, scaleup=True, stride=32):
     # Resize and pad image while meeting stride-multiple constraints
@@ -156,6 +157,7 @@ def video_detection(path_x='' ,conf_=0.25):
             gn = torch.tensor(img0.shape)[[1, 0, 1, 0]]
             no_coverall_count = 0
             no_helmet_count = 0
+            total_safety_violations = 0
 
             if len(det):
               det[:, :4] = scale_coords(img.shape[2:], det[:, :4], img0.shape).round()
@@ -168,6 +170,8 @@ def video_detection(path_x='' ,conf_=0.25):
                     no_coverall_count += int(n)
                 if names[int(c)] == 'No Safety Helmet':
                     no_helmet_count += int(n)
+                if names[int(c)] == 'No Coverall' or names[int(c)] == 'No Safety Helmet':
+                    total_safety_violations = no_coverall_count + no_helmet_count
 
               for *xyxy, conf, cls in reversed(det):
 
@@ -180,17 +184,45 @@ def video_detection(path_x='' ,conf_=0.25):
           # print(f"{j+1}/{nframes} frames processed")
           # print(conf)
           print("Coverall Count in Frame {}: {}".format(j, coverall_count))
-          #print("Helmet Count: ", helmet_count)
+          print("Total Number of Safety Violations: ", total_safety_violations)
           # yield img0, fps_x, img0.shape, total_detections
-          yield img0, fps_x, img0.shape, no_coverall_count, no_helmet_count
+          yield img0, fps_x, img0.shape, no_coverall_count, no_helmet_count, total_safety_violations
           # cv2.imshow('hello',img0)
           # cv2.waitKey(1) & 0xFF == ord("q")
 
         else:
           break
-      
+
 
   # output.release()
   video.release()
 # cv2.imshow("image",img0)
 # cv2.waitKey(0) & 0xFF == ord("q")
+
+def video_splitter(video_path):
+    print("This code ran!")
+    '''# Create a subfolder called "Split Videos" in the directory of the video file
+    output_dir = os.path.join(os.path.dirname(video_path), "Split Videos")
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Split the video into smaller parts of 5 minutes each
+    video = mp.VideoFileClip(video_path)
+    video_duration = video.duration
+    chunk_duration = 5 * 60  # 5 minutes in seconds
+
+    num_parts = int(video_duration / chunk_duration) + 1
+
+    for i in range(num_parts):
+        start_time = i * chunk_duration
+        end_time = min((i + 1) * chunk_duration, video_duration)
+        part_duration = end_time - start_time
+
+        # Extract the part of the video
+        output_file = os.path.join(output_dir, f"part_{i + 1}.mp4")
+        video_part = video.subclip(start_time, end_time)
+        video_part.write_videofile(output_file)
+
+    video.reader.close()
+    video.audio.reader.close_proc()
+
+    return num_parts, output_dir'''
