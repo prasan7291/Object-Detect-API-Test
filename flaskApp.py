@@ -225,7 +225,7 @@ ALLOWED_EXTENSIONS = {'mp4'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def split_video_into_chunks(video_path):
+'''def split_video_into_chunks(video_path):
     print("split_video_into_chunks function RAN!!!!")
     video_file = VideoFileClip(video_path)
     duration = video_file.duration
@@ -246,8 +246,32 @@ def split_video_into_chunks(video_path):
         thumbnail_image = subclip.get_frame(0)  # Get the first frame of the video part as the thumbnail
         Image.fromarray(thumbnail_image).save(thumbnail_path)
 
+    print(f"Video split into {num_chunks} parts.")'''
+
+def split_video_into_chunks(video_path, parent_filename):
+    print("split_video_into_chunks function RAN!!!!")
+    video_file = VideoFileClip(video_path)
+    duration = video_file.duration
+    chunk_duration = 1 * 60  # 5 minutes in seconds
+    num_chunks = int(math.ceil(duration / chunk_duration))
+    output_folder = os.path.join(os.path.dirname(video_path), "Split Videos")
+    os.makedirs(output_folder, exist_ok=True)
+
+    for i in range(num_chunks):
+        start_time = i * chunk_duration
+        end_time = min((i + 1) * chunk_duration, duration)
+        subclip = video_file.subclip(start_time, end_time)
+        output_filename = os.path.join(output_folder, f"{os.path.splitext(parent_filename)[0]}_Part {i + 1}.mp4")
+        subclip.write_videofile(output_filename, codec='libx264')
+
+        thumbnail_filename = f"{os.path.splitext(parent_filename)[0]}_Part {i + 1}_thumbnail.jpg"
+        thumbnail_path = os.path.join(output_folder, thumbnail_filename)
+        thumbnail_image = subclip.get_frame(0)  # Get the first frame of the video part as the thumbnail
+        Image.fromarray(thumbnail_image).save(thumbnail_path)
+
     print(f"Video split into {num_chunks} parts.")
-'''@app.route('/split_video', methods=['POST'])
+
+@app.route('/split_video', methods=['GET','POST'])
 def split_video():
     video_file = request.files.get('file')
     if not video_file:
@@ -258,24 +282,8 @@ def split_video():
     video_file.save(video_file_path)
 
     # Call the function to split the video into chunks
-    split_video_into_chunks(video_file_path)
-
-    # You can return a success message or any other information as needed
-    return jsonify(message="Video split into chunks successfully.")'''
-
-@app.route('/split_video', methods=['GET', 'POST'])
-def split_video():
-    video_file = request.files.get('file')
-    if not video_file:
-        return jsonify(message="Please upload a video first.")
-
-    # Save the uploaded video file to a specific location
-    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
-    video_file.save(video_file_path)
-
-    # Call the function to split the video into chunks
-    split_video_into_chunks(video_file_path)
-    # Return the list of file parts as a JSON response
+    split_video_into_chunks(video_file_path,video_file.filename)
+    # Return JSON response
     return jsonify(message="Video split into chunks successfully.")
 @app.route('/split_video_details', methods=['GET'])
 def split_video_details():
@@ -284,6 +292,7 @@ def split_video_details():
     files_and_durations = []
     ip_address = request.url_root
 
+    # Get the video file selected by the user
     for filename in os.listdir(output_folder):
         if filename.lower().endswith('.mp4'):  # Check if the file has the .mp4 extension
             file_path = os.path.join(output_folder, filename)
@@ -294,7 +303,13 @@ def split_video_details():
             file_url_with_ip = ip_address + file_url
             thumbnail_name = file_url_with_ip.replace(".mp4", "_thumbnail.jpg")  # Generate the thumbnail filename
 
+            # Split the filename based on "_ Part"
+            parent_file_name = filename.split("_ Part")[0].rsplit('_', 1)[0].strip()  # Extract the parent file name from the filename
+            parent_file_url_with_ip = ip_address + url_for('static', filename=os.path.join('files', 'Split Videos',
+                                                                                           parent_file_name + ".mp4"))
+            print("Parent File Name: ",parent_file_name)
             files_and_durations.append({
+                'parent_file_name': parent_file_url_with_ip,
                 'file_name': filename,
                 'duration in mins': duration_in_mins,
                 'file_url': file_url_with_ip,
