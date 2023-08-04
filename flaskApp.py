@@ -227,6 +227,7 @@ def detect_fun():
     # Perform object detection on the video
     yolo_output = video_detection(video_file_path, conf_=0.25)
     frames, sizeImage, detectedObjects, no_helmet_count, total_safety_violations = 0, 0, 0, 0, 0
+    safety_violation_frames = []
 
     for frame_number, (_, FPS_, xl, yl, no_helmet, safety_violations) in enumerate(yolo_output):
         frames = str(FPS_)
@@ -238,28 +239,35 @@ def detect_fun():
         if int(safety_violations) > 0:
             frames_with_safety_violations.append(frame_number)
             capture_screenshot(video_file_path, frame_number)
+            safety_violation_frames.append(frame_number)  # Append frame number with safety violation
 
     response = {
         'results': [
-            {'id': 'detectCount', 'value': detectedObjects},
-            {'id': 'NoHelmetCount', 'value': no_helmet_count},
+            {'id': 'detectCount', 'frames': safety_violation_frames},
+            {'id': 'NoHelmetCount', 'frames': frames_with_safety_violations},
             {'id': 'TotalSafetyViolations', 'value': total_safety_violations}
         ]
     }
 
     return jsonify(response)
 
+
 def capture_screenshot(video_path, frame_number):
     video_capture = cv2.VideoCapture(video_path)
     video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-
     ret, frame = video_capture.read()
+
     if ret:
-        screenshot_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'Processed Video Data')
+        screenshot_folder = os.path.join(app.config['UPLOAD_FOLDER'], "Processed Video Data")
         os.makedirs(screenshot_folder, exist_ok=True)
-        screenshot_path = os.path.join(screenshot_folder, f'screenshot_{frame_number}.jpg')
+
+        screenshot_filename = f"{os.path.splitext(os.path.basename(video_path))[0]}_{frame_number}.jpg"
+        screenshot_path = os.path.join(screenshot_folder, screenshot_filename)
+
         cv2.imwrite(screenshot_path, frame)
-    video_capture.release()
+        print(f"Screenshot saved: {screenshot_path}")
+    else:
+        print(f"Error capturing screenshot for frame {frame_number}")
 
 @app.route('/sizegenerateweb',methods = ['GET'])
 def size_fun_web():
