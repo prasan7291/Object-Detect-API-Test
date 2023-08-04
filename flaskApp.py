@@ -206,10 +206,60 @@ def size_fun():
     global sizeImage
     return jsonify(imageSize=sizeImage)
 
-@app.route('/detectionCount',methods = ['GET'])
+'''@app.route('/detectionCount',methods = ['GET'])
 def detect_fun():
     global detectedObjects
-    return jsonify(detectCount=detectedObjects,NoHelmetCount=no_helmet_count,TotalSafetyViolations=total_safety_violations)
+    return jsonify(detectCount=detectedObjects,NoHelmetCount=no_helmet_count,TotalSafetyViolations=total_safety_violations)'''
+
+frames_with_safety_violations = []
+@app.route('/detectionCount', methods=['POST'])
+def detect_fun():
+    global frames_with_safety_violations  # Declare the global variable
+    # Get the uploaded video file
+    video_file = request.files.get('video')
+    if not video_file:
+        return jsonify(message="Please upload a video first.")
+
+    # Save the uploaded video file to a specific location
+    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
+    video_file.save(video_file_path)
+
+    # Perform object detection on the video
+    yolo_output = video_detection(video_file_path, conf_=0.25)
+    frames, sizeImage, detectedObjects, no_helmet_count, total_safety_violations = 0, 0, 0, 0, 0
+
+    for frame_number, (_, FPS_, xl, yl, no_helmet, safety_violations) in enumerate(yolo_output):
+        frames = str(FPS_)
+        sizeImage = str(xl)
+        detectedObjects = str(yl)
+        no_helmet_count = str(no_helmet)
+        total_safety_violations = str(safety_violations)
+
+        if int(safety_violations) > 0:
+            frames_with_safety_violations.append(frame_number)
+            capture_screenshot(video_file_path, frame_number)
+
+    response = {
+        'results': [
+            {'id': 'detectCount', 'value': detectedObjects},
+            {'id': 'NoHelmetCount', 'value': no_helmet_count},
+            {'id': 'TotalSafetyViolations', 'value': total_safety_violations}
+        ]
+    }
+
+    return jsonify(response)
+
+def capture_screenshot(video_path, frame_number):
+    video_capture = cv2.VideoCapture(video_path)
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+
+    ret, frame = video_capture.read()
+    if ret:
+        screenshot_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'Processed Video Data')
+        os.makedirs(screenshot_folder, exist_ok=True)
+        screenshot_path = os.path.join(screenshot_folder, f'screenshot_{frame_number}.jpg')
+        cv2.imwrite(screenshot_path, frame)
+    video_capture.release()
 
 @app.route('/sizegenerateweb',methods = ['GET'])
 def size_fun_web():
@@ -224,29 +274,6 @@ def detect_fun_web():
 ALLOWED_EXTENSIONS = {'mp4'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-'''def split_video_into_chunks(video_path):
-    print("split_video_into_chunks function RAN!!!!")
-    video_file = VideoFileClip(video_path)
-    duration = video_file.duration
-    chunk_duration = 1 * 60  # 5 minutes in seconds
-    num_chunks = int(math.ceil(duration / chunk_duration))
-    output_folder = os.path.join(os.path.dirname(video_path), "Split Videos")
-    os.makedirs(output_folder, exist_ok=True)
-
-    for i in range(num_chunks):
-        start_time = i * chunk_duration
-        end_time = min((i + 1) * chunk_duration, duration)
-        subclip = video_file.subclip(start_time, end_time)
-        output_filename = os.path.join(output_folder, f"Part {i + 1}.mp4")
-        subclip.write_videofile(output_filename, codec='libx264')
-
-        thumbnail_filename = f"Part {i + 1}_thumbnail.jpg"
-        thumbnail_path = os.path.join(output_folder, thumbnail_filename)
-        thumbnail_image = subclip.get_frame(0)  # Get the first frame of the video part as the thumbnail
-        Image.fromarray(thumbnail_image).save(thumbnail_path)
-
-    print(f"Video split into {num_chunks} parts.")'''
 
 def split_video_into_chunks(video_path, parent_filename):
     print("split_video_into_chunks function RAN!!!!")
