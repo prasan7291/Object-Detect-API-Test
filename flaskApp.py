@@ -311,7 +311,7 @@ def split_video_details():
             files_and_durations.append({
                 'parent_file_name': parent_file_url_with_ip,
                 'file_name': filename,
-                'duration in mins': duration_in_mins,
+                'duration_in_mins': duration_in_mins,
                 'file_url': file_url_with_ip,
                 'thumbnail': thumbnail_name
             })
