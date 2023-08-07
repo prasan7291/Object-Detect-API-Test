@@ -1,0 +1,13 @@
+Safety Helmet
+No Safety Helmet
+Coverall
+No Coverall
+Safety Gloves
+No Safety Gloves
+Safety Shoes
+No Safety Shoes
+Drilling Area
+Safety Glasses
+No Safety Glasses
+Person
+Harness
