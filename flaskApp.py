@@ -36,6 +36,7 @@ import math
 from flask import Flask, render_template, Response, jsonify, request, session, url_for
 from werkzeug.utils import secure_filename, redirect
 import moviepy
+import itertools
 
 
 #------------------------------------
@@ -71,7 +72,7 @@ class UploadFileForm(FlaskForm):
     #video when prompted to do so
     file = FileField("File",validators=[InputRequired()])
     #Slider to get confidence value from user
-    conf_slide = IntegerRangeField('Confidence:  ', default=25,validators=[InputRequired()])
+    conf_slide = IntegerRangeField('Confidence:  ', default=50,validators=[InputRequired()])
     submit = SubmitField("Run")
     
 
@@ -86,7 +87,7 @@ sizeImage = 0
 detectedObjects = 0
 video_file_path=""
 
-def generate_frames(path_x = '',conf_= 0.25):
+def generate_frames(path_x = '',conf_= 0.5):
     #yolo_output varaible stores the output for each detection, yolo_output will contain all 4 things
 
     yolo_output = video_detection(path_x,conf_)
@@ -116,7 +117,7 @@ def generate_frames(path_x = '',conf_= 0.25):
 sizeImageweb = 0
 detectedObjectsweb = 0
 
-def generate_frames_web(path_x,conf_= 0.25):
+def generate_frames_web(path_x,conf_= 0.5):
     yolo_output = video_detection_web(path_x,conf_)
     for detection_,xl,yl in yolo_output:
         ref,buffer=cv2.imencode('.jpg',detection_)
@@ -183,7 +184,7 @@ def video():
 @app.route('/webapp')
 def webapp():
     #return Response(generate_frames(path_x = session.get('video_path', None),conf_=round(float(session.get('conf_', None))/100,2)),mimetype='multipart/x-mixed-replace; boundary=frame')
-    return Response(generate_frames_web(path_x=0,conf_=0.25), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(generate_frames_web(path_x=0,conf_=0.5), mimetype='multipart/x-mixed-replace; boundary=frame')
 #Lets create a URL using @app.route('/fpsgenerate') which is fpsgenerate
 #go to generate_frames function where we perform object detection on input video, there we store the number of frames as
 #global frames
@@ -202,21 +203,12 @@ def size_fun():
 
 frames_with_safety_violations = []
 
-
 def capture_screenshot(video_path, frame_number, yolo_output):
     video_capture = cv2.VideoCapture(video_path)
     video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
     ret, frame = video_capture.read()
 
     if ret:
-        detection_frame, _, _, _, _, _, _, class_counts = yolo_output[frame_number]
-
-        for class_id, count in class_counts.items():
-            if count > 0:
-                for box in detection_frame[class_id]:
-                    x1, y1, x2, y2 = box[:4]
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Draw green bounding box
-
         screenshot_folder = os.path.join(app.config['UPLOAD_FOLDER'], "Processed Video Data")
         os.makedirs(screenshot_folder, exist_ok=True)
 
@@ -226,11 +218,12 @@ def capture_screenshot(video_path, frame_number, yolo_output):
         cv2.imwrite(screenshot_path, frame)
         print(f"Screenshot saved: {screenshot_path}")
 
-        return screenshot_path, frame_number  # Return screenshot_path and frame_number
+        _, FPS_, xl, _, _, _, _, _ = next(itertools.islice(yolo_output, frame_number, None))
+        frame_time = frame_number / float(FPS_)  # Calculate time in the video for the frame
+        return screenshot_path, frame_time  # Return screenshot_path and frame_time
     else:
         print(f"Error capturing screenshot for frame {frame_number}")
         return None, None  # Return None values in case of error
-
 
 '''@app.route('/detectionCount', methods=['POST'])
 def detect_fun():
@@ -245,77 +238,31 @@ def detect_fun():
     video_file.save(video_file_path)
 
     # Perform object detection on the video
-    yolo_output = video_detection(video_file_path, conf_=0.25)
-    frames, sizeImage, detectedObjects, no_helmet_count, total_safety_violations = 0, 0, 0, 0, 0
-    safety_violation_frames = []
-    frames_with_safety_violations = []
-    screenshot_data = []
-
-    for frame_number, (_, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts) in enumerate(yolo_output):
-        frames = str(FPS_)
-        sizeImage = str(xl)
-        no_helmet_count = str(no_helmet_count)
-        no_gloves_count = str(no_gloves_count)
-        total_safety_violations = str(total_safety_violations)
-
-        if int(total_safety_violations) > 0:
-            frames_with_safety_violations.append(frame_number)
-            screenshot_path, frame_time = capture_screenshot(video_file_path, frame_number)
-            if screenshot_path:
-                safety_violation_frames.append(frame_number)  # Append frame number with safety violation
-                screenshot_data.append({
-                    'frame_number': frame_number,
-                    'time_in_video': frame_time,
-                    'screenshot_path': screenshot_path,
-                })
-            capture_screenshot(video_file_path, frame_number)
-            safety_violation_frames.append(frame_number)  # Append frame number with safety violation
-
-    response = {
-        'results': [
-            {'id': 'detectCount', 'frames': safety_violation_frames},
-            {'id': 'NoHelmetCount', 'frames': frames_with_safety_violations},
-            {'id': 'TotalSafetyViolations', 'value': total_safety_violations}
-        ],
-        'screenshots': screenshot_data
-    }
-
-    return jsonify(response)'''
-@app.route('/detectionCount', methods=['POST'])
-def detect_fun():
-    global frames_with_safety_violations  # Declare the global variable
-    # Get the uploaded video file
-    video_file = request.files.get('video')
-    if not video_file:
-        return jsonify(message="Please upload a video first.")
-
-    # Save the uploaded video file to a specific location
-    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
-    video_file.save(video_file_path)
-
-    # Perform object detection on the video
-    yolo_output = video_detection(video_file_path, conf_=0.25)
+    yolo_output = video_detection(video_file_path, conf_=0.5)
     frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
     screenshot_data = []
 
     for frame_number, (_, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts) in enumerate(yolo_output):
         frames = str(FPS_)
         sizeImage = str(xl)
+        no_coverall_count = str(no_coverall_count)
+        print("No Coverall Count in Frame: ", no_coverall_count)
         no_helmet_count = str(no_helmet_count)
         no_gloves_count = str(no_gloves_count)
+        print("No Gloves Count: ",no_gloves_count)
         total_safety_violations = str(total_safety_violations)
 
         if int(total_safety_violations) > 0:
             frames_with_safety_violations.setdefault('detectCount', []).append(frame_number)
-            if int(no_helmet_count) > 0:
-                frames_with_safety_violations.setdefault('NoHelmetCount', []).append(frame_number)
-                screenshot_path, frame_time = capture_screenshot(video_file_path, frame_number)
+            if int(no_coverall_count) > 0:
+                frames_with_safety_violations.setdefault('NoCoverallCount', []).append(frame_number)
+                screenshot_path, frame_time = capture_screenshot(video_file_path, frame_number,yolo_output)
                 if screenshot_path:
                     screenshot_data.append({
                         'frame_number': frame_number,
                         'time_in_video': frame_time,
                         'screenshot_path': screenshot_path,
-                        'class_id': 'NoHelmetCount'
+                        'class_id': 'NoCoverallCount'
                     })
 
     screenshot_paths_by_class = {}  # Dictionary to store screenshot paths by class ID
@@ -342,10 +289,95 @@ def detect_fun():
         'screenshots': screenshot_data
     }
 
+    return jsonify(response)'''
+
+@app.route('/detectionCount', methods=['POST'])
+def detect_fun():
+    global frames_with_safety_violations  # Declare the global variable
+    # Get the uploaded video file
+    video_file = request.files.get('video')
+    if not video_file:
+        return jsonify(message="Please upload a video first.")
+
+    # Save the uploaded video file to a specific location
+    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
+    video_file.save(video_file_path)
+
+    # Perform object detection on the video
+    yolo_output = video_detection(video_file_path, conf_=0.5)
+    frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
+    frame_images_data = []
+
+    for frame_number, (frame_image, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts) in enumerate(yolo_output):
+        frames = str(FPS_)
+        sizeImage = str(xl)
+        no_coverall_count = str(no_coverall_count)
+        print("No Coverall Count in Frame: ", no_coverall_count)
+        no_helmet_count = str(no_helmet_count)
+        no_gloves_count = str(no_gloves_count)
+        print("No Gloves Count: ", no_gloves_count)
+        total_safety_violations = str(total_safety_violations)
+
+        if int(total_safety_violations) > 0:
+            frames_with_safety_violations.setdefault('detectCount', []).append(frame_number)
+            if int(no_coverall_count) > 0:
+                frames_with_safety_violations.setdefault('NoCoverallCount', []).append(frame_number)
+
+                # Save the processed frame image
+                frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoCoverall.jpg"
+                frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
+                cv2.imwrite(frame_path, frame_image, [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+                frame_images_data.append({
+                    'frame_number': frame_number,
+                    'frame_image_path': frame_path,
+                    'class_id': 'NoCoverallCount'
+                })
+            if int(no_gloves_count) > 0:
+                print("This Case Ran!!")
+                frames_with_safety_violations.setdefault('NoGlovesCount', []).append(frame_number)
+
+                # Save the processed frame image
+                frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoGloves.jpg"
+                frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
+                cv2.imwrite(frame_path, frame_image, [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+                frame_images_data.append({
+                    'frame_number': frame_number,
+                    'frame_image_path': frame_path,
+                    'class_id': 'NoGlovesCount'
+                })
+
+    '''frame_images_by_class = {}  # Dictionary to store frame image paths by class ID
+
+    for class_id, frames_list in frames_with_safety_violations.items():
+        frame_image_paths = []
+        for frame_number in frames_list:
+            frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}.jpg"
+            frame_image_path = os.path.join("static/files/Processed Video Data", frame_filename)
+            frame_image_paths.append(frame_image_path)
+        frame_images_by_class[class_id] = frame_image_paths
+
+    response_results = []
+    for class_id, frames_list in frames_with_safety_violations.items():
+        result = {
+            'id': class_id,
+            'frames': frames_list,
+            'frame_image_paths': frame_images_by_class[class_id]
+        }
+        response_results.append(result)
+
+    response = {
+        'results': response_results,
+        'frame_images': frame_images_data
+    }
+
+    return jsonify(response)'''
+    response = {
+        'frame_images': frame_images_data
+    }
+
     return jsonify(response)
-
-
-
 
 @app.route('/sizegenerateweb',methods = ['GET'])
 def size_fun_web():
