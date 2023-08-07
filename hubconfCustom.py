@@ -56,7 +56,7 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
 
 #classes_to_filter = ['Coverall']  #You can give list of classes to filter by name, Be happy you don't have to put class number. ['train','person' ]
 all_class_names = ['Safety Helmet', 'No Safety Helmet', 'Coverall', 'No Coverall', 'Safety Gloves', 'No Safety Gloves', 'Safety Shoes', 'No Safety Shoes', 'Drilling Area', 'Safety Glasses', 'No Safety Glasses', 'Person', 'Harness']
-classes_to_filter = ['No Safety Helmet','No Coverall']
+classes_to_filter = ['No Safety Helmet','No Coverall','No Safety Gloves','No Safety Shoes','No Safety Glasses']
 specific_class_indices = [all_class_names.index(class_name) for class_name in classes_to_filter]
 print("Specific Class Indices: ", specific_class_indices)
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -65,7 +65,7 @@ opt = {
     "weights": os.path.join(current_dir, "best.pt"),  # Path to weights file default weights are for nano model
     "yaml": os.path.join(current_dir, "data/SafeVision_Detect.yaml"),
     "img-size": 640,  # default image size
-    "conf-thres": 0.25,  # confidence threshold for inference.
+    "conf-thres": 0.5,  # confidence threshold for inference.
     "iou-thres": 0.45,  # NMS IoU threshold for inference.
     "device": 'cpu',  # device to run our model i.e. 0 or 0,1,2,3 or cpu
     "classes": ['Coverall','Safety Helmet','Safety Gloves','Safety Shoes','Safety Glasses','Harness']  # list of classes to filter or None
@@ -164,8 +164,8 @@ def video_detection(path_x='' ,conf_=0.25):
                     no_helmet_count += int(n)
                 if names[int(c)] == 'No Safety Gloves':
                     no_gloves_count += int(n)
-                if names[int(c)] == 'No Coverall' or names[int(c)] == 'No Safety Helmet':
-                    total_safety_violations = no_coverall_count + no_helmet_count
+                if names[int(c)] == 'No Coverall' or names[int(c)] == 'No Safety Helmet' or names[int(c) == 'No Safety Gloves']:
+                    total_safety_violations = no_coverall_count + no_helmet_count + no_gloves_count
 
               for *xyxy, conf, cls in reversed(det):
 
@@ -175,7 +175,7 @@ def video_detection(path_x='' ,conf_=0.25):
                 class_counts[int(cls)] = class_counts.get(int(cls), 0) + 1
 
           fps_x = int((j+1)/(time.time() - start_time))
-          print("Coverall Count in Frame {}: {}".format(j, coverall_count))
+          print("No Coverall Count in Frame {}: {}".format(j, no_coverall_count))
           print("Total Number of Safety Violations: ", total_safety_violations)
           # yield img0, fps_x, img0.shape, total_detections
           yield img0, fps_x, img0.shape, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts
