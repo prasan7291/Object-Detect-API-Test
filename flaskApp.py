@@ -307,7 +307,16 @@ def detect_fun():
     yolo_output = video_detection(video_file_path, conf_=0.5)
     frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
     frame_images_data = []
+    no_coverall_frame_numbers = []
+    no_gloves_frame_numbers = []
 
+    # Get the total number of frames in the video
+    video = cv2.VideoCapture(video_file_path)
+    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = int(video.get(cv2.CAP_PROP_FPS))
+    video.release()
+
+    print ("Total Number of Frames: ", total_frames)
     for frame_number, (frame_image, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts) in enumerate(yolo_output):
         frames = str(FPS_)
         sizeImage = str(xl)
@@ -323,6 +332,11 @@ def detect_fun():
             if int(no_coverall_count) > 0:
                 frames_with_safety_violations.setdefault('NoCoverallCount', []).append(frame_number)
 
+                # Calculate timestamp based on frame number and frame rate
+                no_coverall_frame_numbers.append(frame_number)
+                no_coverall_timestamp = sum([1 / fps for frame_num in no_coverall_frame_numbers])
+
+                print("Timestamp in seconds: ",no_coverall_timestamp)
                 # Save the processed frame image
                 frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoCoverall.jpg"
                 frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
@@ -331,12 +345,17 @@ def detect_fun():
                 frame_images_data.append({
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
-                    'class_id': 'NoCoverallCount'
+                    'class_id': 'NoCoverallCount',
+                    'timestamp': no_coverall_timestamp
                 })
             if int(no_gloves_count) > 0:
-                print("This Case Ran!!")
                 frames_with_safety_violations.setdefault('NoGlovesCount', []).append(frame_number)
 
+                # Calculate timestamp based on frame number and frame rate
+                no_gloves_frame_numbers.append(frame_number)
+                no_gloves_timestamp = sum([1 / fps for frame_num in no_gloves_frame_numbers])
+
+                print ("No Gloves Timestamp: ", no_gloves_timestamp)
                 # Save the processed frame image
                 frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoGloves.jpg"
                 frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
@@ -345,34 +364,9 @@ def detect_fun():
                 frame_images_data.append({
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
-                    'class_id': 'NoGlovesCount'
+                    'class_id': 'NoGlovesCount',
+                    'timestamp': no_gloves_timestamp
                 })
-
-    '''frame_images_by_class = {}  # Dictionary to store frame image paths by class ID
-
-    for class_id, frames_list in frames_with_safety_violations.items():
-        frame_image_paths = []
-        for frame_number in frames_list:
-            frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}.jpg"
-            frame_image_path = os.path.join("static/files/Processed Video Data", frame_filename)
-            frame_image_paths.append(frame_image_path)
-        frame_images_by_class[class_id] = frame_image_paths
-
-    response_results = []
-    for class_id, frames_list in frames_with_safety_violations.items():
-        result = {
-            'id': class_id,
-            'frames': frames_list,
-            'frame_image_paths': frame_images_by_class[class_id]
-        }
-        response_results.append(result)
-
-    response = {
-        'results': response_results,
-        'frame_images': frame_images_data
-    }
-
-    return jsonify(response)'''
     response = {
         'frame_images': frame_images_data
     }
