@@ -26,7 +26,7 @@ import cv2
 
 # Hubconfcustom is the python file which contains the code for our object detection model
 #Video Detection is the Function which performs Object Detection on Input Video
-from hubconfCustom import video_detection, video_splitter
+from hubconfCustom import video_detection
 
 #Video_detection_web is the functon which performs object detection on Live Feed
 from hubconfcustomweb import video_detection_web
@@ -194,25 +194,45 @@ def fps_fun():
     # Now we will jsonify the frames we stored earlier
     frames_json = jsonify(result=frames)
     return jsonify(frames_string=frames_string, frames_json=frames_json.json)
-'''
-def fps_fun():
-    global frames
-    frames_string = "Test"
-    # Now we will jsonify the frames we stored earlier
-    return jsonify(result=frames)'''
 
 @app.route('/sizegenerate',methods = ['GET'])
 def size_fun():
     global sizeImage
     return jsonify(imageSize=sizeImage)
 
-'''@app.route('/detectionCount',methods = ['GET'])
-def detect_fun():
-    global detectedObjects
-    return jsonify(detectCount=detectedObjects,NoHelmetCount=no_helmet_count,TotalSafetyViolations=total_safety_violations)'''
-
 frames_with_safety_violations = []
-@app.route('/detectionCount', methods=['POST'])
+
+
+def capture_screenshot(video_path, frame_number, yolo_output):
+    video_capture = cv2.VideoCapture(video_path)
+    video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+    ret, frame = video_capture.read()
+
+    if ret:
+        detection_frame, _, _, _, _, _, _, class_counts = yolo_output[frame_number]
+
+        for class_id, count in class_counts.items():
+            if count > 0:
+                for box in detection_frame[class_id]:
+                    x1, y1, x2, y2 = box[:4]
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)  # Draw green bounding box
+
+        screenshot_folder = os.path.join(app.config['UPLOAD_FOLDER'], "Processed Video Data")
+        os.makedirs(screenshot_folder, exist_ok=True)
+
+        screenshot_filename = f"{os.path.splitext(os.path.basename(video_path))[0]}_{frame_number}.jpg"
+        screenshot_path = os.path.join(screenshot_folder, screenshot_filename)
+
+        cv2.imwrite(screenshot_path, frame)
+        print(f"Screenshot saved: {screenshot_path}")
+
+        return screenshot_path, frame_number  # Return screenshot_path and frame_number
+    else:
+        print(f"Error capturing screenshot for frame {frame_number}")
+        return None, None  # Return None values in case of error
+
+
+'''@app.route('/detectionCount', methods=['POST'])
 def detect_fun():
     global frames_with_safety_violations  # Declare the global variable
     # Get the uploaded video file
@@ -228,16 +248,26 @@ def detect_fun():
     yolo_output = video_detection(video_file_path, conf_=0.25)
     frames, sizeImage, detectedObjects, no_helmet_count, total_safety_violations = 0, 0, 0, 0, 0
     safety_violation_frames = []
+    frames_with_safety_violations = []
+    screenshot_data = []
 
-    for frame_number, (_, FPS_, xl, yl, no_helmet, safety_violations) in enumerate(yolo_output):
+    for frame_number, (_, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts) in enumerate(yolo_output):
         frames = str(FPS_)
         sizeImage = str(xl)
-        detectedObjects = str(yl)
-        no_helmet_count = str(no_helmet)
-        total_safety_violations = str(safety_violations)
+        no_helmet_count = str(no_helmet_count)
+        no_gloves_count = str(no_gloves_count)
+        total_safety_violations = str(total_safety_violations)
 
-        if int(safety_violations) > 0:
+        if int(total_safety_violations) > 0:
             frames_with_safety_violations.append(frame_number)
+            screenshot_path, frame_time = capture_screenshot(video_file_path, frame_number)
+            if screenshot_path:
+                safety_violation_frames.append(frame_number)  # Append frame number with safety violation
+                screenshot_data.append({
+                    'frame_number': frame_number,
+                    'time_in_video': frame_time,
+                    'screenshot_path': screenshot_path,
+                })
             capture_screenshot(video_file_path, frame_number)
             safety_violation_frames.append(frame_number)  # Append frame number with safety violation
 
@@ -246,28 +276,76 @@ def detect_fun():
             {'id': 'detectCount', 'frames': safety_violation_frames},
             {'id': 'NoHelmetCount', 'frames': frames_with_safety_violations},
             {'id': 'TotalSafetyViolations', 'value': total_safety_violations}
-        ]
+        ],
+        'screenshots': screenshot_data
+    }
+
+    return jsonify(response)'''
+@app.route('/detectionCount', methods=['POST'])
+def detect_fun():
+    global frames_with_safety_violations  # Declare the global variable
+    # Get the uploaded video file
+    video_file = request.files.get('video')
+    if not video_file:
+        return jsonify(message="Please upload a video first.")
+
+    # Save the uploaded video file to a specific location
+    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
+    video_file.save(video_file_path)
+
+    # Perform object detection on the video
+    yolo_output = video_detection(video_file_path, conf_=0.25)
+    frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
+    screenshot_data = []
+
+    for frame_number, (_, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts) in enumerate(yolo_output):
+        frames = str(FPS_)
+        sizeImage = str(xl)
+        no_helmet_count = str(no_helmet_count)
+        no_gloves_count = str(no_gloves_count)
+        total_safety_violations = str(total_safety_violations)
+
+        if int(total_safety_violations) > 0:
+            frames_with_safety_violations.setdefault('detectCount', []).append(frame_number)
+            if int(no_helmet_count) > 0:
+                frames_with_safety_violations.setdefault('NoHelmetCount', []).append(frame_number)
+                screenshot_path, frame_time = capture_screenshot(video_file_path, frame_number)
+                if screenshot_path:
+                    screenshot_data.append({
+                        'frame_number': frame_number,
+                        'time_in_video': frame_time,
+                        'screenshot_path': screenshot_path,
+                        'class_id': 'NoHelmetCount'
+                    })
+
+    screenshot_paths_by_class = {}  # Dictionary to store screenshot paths by class ID
+
+    for class_id, frames_list in frames_with_safety_violations.items():
+        screenshot_paths = []
+        for frame_number in frames_list:
+            screenshot_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}.jpg"
+            screenshot_path = os.path.join("static/files/Processed Video Data", screenshot_filename)
+            screenshot_paths.append(screenshot_path)
+        screenshot_paths_by_class[class_id] = screenshot_paths
+
+    response_results = []
+    for class_id, frames_list in frames_with_safety_violations.items():
+        result = {
+            'id': class_id,
+            'frames': frames_list,
+            'screenshot_paths': screenshot_paths_by_class[class_id]
+        }
+        response_results.append(result)
+
+    response = {
+        'results': response_results,
+        'screenshots': screenshot_data
     }
 
     return jsonify(response)
 
 
-def capture_screenshot(video_path, frame_number):
-    video_capture = cv2.VideoCapture(video_path)
-    video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-    ret, frame = video_capture.read()
 
-    if ret:
-        screenshot_folder = os.path.join(app.config['UPLOAD_FOLDER'], "Processed Video Data")
-        os.makedirs(screenshot_folder, exist_ok=True)
-
-        screenshot_filename = f"{os.path.splitext(os.path.basename(video_path))[0]}_{frame_number}.jpg"
-        screenshot_path = os.path.join(screenshot_folder, screenshot_filename)
-
-        cv2.imwrite(screenshot_path, frame)
-        print(f"Screenshot saved: {screenshot_path}")
-    else:
-        print(f"Error capturing screenshot for frame {frame_number}")
 
 @app.route('/sizegenerateweb',methods = ['GET'])
 def size_fun_web():
