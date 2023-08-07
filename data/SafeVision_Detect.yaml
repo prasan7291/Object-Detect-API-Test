@@ -4,9 +4,9 @@
 download: bash ./scripts/get_coco.sh
 
 # train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
-train: C:\Object-Detect-API-Test\Split Dataset\images\train  # 118287 images
-val: C:\Object-Detect-API-Test\Dataset\Split Dataset\images\val  # 5000 images
-test: C:\Object-Detect-API-Test\Split Dataset\images\test  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
+train: Dataset/Split Dataset/images/train  # 118287 images
+val: Dataset/Split Dataset/images/val  # 5000 images
+test: Dataset/Split Dataset/images/test  # 20288 of 40670 images, submit to https://competitions.codalab.org/competitions/20794
 
 # number of classes
 nc: 13
