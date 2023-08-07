@@ -87,7 +87,7 @@ sizeImage = 0
 detectedObjects = 0
 video_file_path=""
 
-def generate_frames(path_x = '',conf_= 0.5):
+def generate_frames(path_x = '',conf_= 0.35):
     #yolo_output varaible stores the output for each detection, yolo_output will contain all 4 things
 
     yolo_output = video_detection(path_x,conf_)
@@ -117,7 +117,7 @@ def generate_frames(path_x = '',conf_= 0.5):
 sizeImageweb = 0
 detectedObjectsweb = 0
 
-def generate_frames_web(path_x,conf_= 0.5):
+def generate_frames_web(path_x,conf_= 0.35):
     yolo_output = video_detection_web(path_x,conf_)
     for detection_,xl,yl in yolo_output:
         ref,buffer=cv2.imencode('.jpg',detection_)
@@ -184,7 +184,7 @@ def video():
 @app.route('/webapp')
 def webapp():
     #return Response(generate_frames(path_x = session.get('video_path', None),conf_=round(float(session.get('conf_', None))/100,2)),mimetype='multipart/x-mixed-replace; boundary=frame')
-    return Response(generate_frames_web(path_x=0,conf_=0.5), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(generate_frames_web(path_x=0,conf_=0.35), mimetype='multipart/x-mixed-replace; boundary=frame')
 #Lets create a URL using @app.route('/fpsgenerate') which is fpsgenerate
 #go to generate_frames function where we perform object detection on input video, there we store the number of frames as
 #global frames
@@ -225,72 +225,6 @@ def capture_screenshot(video_path, frame_number, yolo_output):
         print(f"Error capturing screenshot for frame {frame_number}")
         return None, None  # Return None values in case of error
 
-'''@app.route('/detectionCount', methods=['POST'])
-def detect_fun():
-    global frames_with_safety_violations  # Declare the global variable
-    # Get the uploaded video file
-    video_file = request.files.get('video')
-    if not video_file:
-        return jsonify(message="Please upload a video first.")
-
-    # Save the uploaded video file to a specific location
-    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
-    video_file.save(video_file_path)
-
-    # Perform object detection on the video
-    yolo_output = video_detection(video_file_path, conf_=0.5)
-    frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
-    screenshot_data = []
-
-    for frame_number, (_, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts) in enumerate(yolo_output):
-        frames = str(FPS_)
-        sizeImage = str(xl)
-        no_coverall_count = str(no_coverall_count)
-        print("No Coverall Count in Frame: ", no_coverall_count)
-        no_helmet_count = str(no_helmet_count)
-        no_gloves_count = str(no_gloves_count)
-        print("No Gloves Count: ",no_gloves_count)
-        total_safety_violations = str(total_safety_violations)
-
-        if int(total_safety_violations) > 0:
-            frames_with_safety_violations.setdefault('detectCount', []).append(frame_number)
-            if int(no_coverall_count) > 0:
-                frames_with_safety_violations.setdefault('NoCoverallCount', []).append(frame_number)
-                screenshot_path, frame_time = capture_screenshot(video_file_path, frame_number,yolo_output)
-                if screenshot_path:
-                    screenshot_data.append({
-                        'frame_number': frame_number,
-                        'time_in_video': frame_time,
-                        'screenshot_path': screenshot_path,
-                        'class_id': 'NoCoverallCount'
-                    })
-
-    screenshot_paths_by_class = {}  # Dictionary to store screenshot paths by class ID
-
-    for class_id, frames_list in frames_with_safety_violations.items():
-        screenshot_paths = []
-        for frame_number in frames_list:
-            screenshot_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}.jpg"
-            screenshot_path = os.path.join("static/files/Processed Video Data", screenshot_filename)
-            screenshot_paths.append(screenshot_path)
-        screenshot_paths_by_class[class_id] = screenshot_paths
-
-    response_results = []
-    for class_id, frames_list in frames_with_safety_violations.items():
-        result = {
-            'id': class_id,
-            'frames': frames_list,
-            'screenshot_paths': screenshot_paths_by_class[class_id]
-        }
-        response_results.append(result)
-
-    response = {
-        'results': response_results,
-        'screenshots': screenshot_data
-    }
-
-    return jsonify(response)'''
-
 @app.route('/detectionCount', methods=['POST'])
 def detect_fun():
     global frames_with_safety_violations  # Declare the global variable
@@ -304,20 +238,22 @@ def detect_fun():
     video_file.save(video_file_path)
 
     # Perform object detection on the video
-    yolo_output = video_detection(video_file_path, conf_=0.5)
+    yolo_output = video_detection(video_file_path, conf_=0.35)
     frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
     frame_images_data = []
     no_coverall_frame_numbers = []
     no_gloves_frame_numbers = []
+    no_glasses_frame_numbers = []
 
     # Get the total number of frames in the video
     video = cv2.VideoCapture(video_file_path)
     total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = int(video.get(cv2.CAP_PROP_FPS))
+    print("FPS: ", fps)
     video.release()
 
     print ("Total Number of Frames: ", total_frames)
-    for frame_number, (frame_image, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts) in enumerate(yolo_output):
+    for frame_number, (frame_image, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts, no_glasses_count) in enumerate(yolo_output):
         frames = str(FPS_)
         sizeImage = str(xl)
         no_coverall_count = str(no_coverall_count)
@@ -325,6 +261,8 @@ def detect_fun():
         no_helmet_count = str(no_helmet_count)
         no_gloves_count = str(no_gloves_count)
         print("No Gloves Count: ", no_gloves_count)
+        no_glasses_count = str(no_glasses_count)
+        print ("No Glasses Count: ", no_glasses_count)
         total_safety_violations = str(total_safety_violations)
 
         if int(total_safety_violations) > 0:
@@ -345,9 +283,10 @@ def detect_fun():
                 frame_images_data.append({
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
-                    'class_id': 'NoCoverallCount',
+                    'class_id': 'No Coverall',
                     'timestamp': no_coverall_timestamp
                 })
+
             if int(no_gloves_count) > 0:
                 frames_with_safety_violations.setdefault('NoGlovesCount', []).append(frame_number)
 
@@ -364,8 +303,28 @@ def detect_fun():
                 frame_images_data.append({
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
-                    'class_id': 'NoGlovesCount',
+                    'class_id': 'No Gloves',
                     'timestamp': no_gloves_timestamp
+                })
+
+            if int(no_glasses_count) > 0:
+                frames_with_safety_violations.setdefault('NoGlassesCount', []).append(frame_number)
+
+                # Calculate timestamp based on frame number and frame rate
+                no_glasses_frame_numbers.append(frame_number)
+                no_glasses_timestamp = sum([1 / fps for frame_num in no_glasses_frame_numbers])
+
+                print ("No Glasses Timestamp: ", no_glasses_timestamp)
+                # Save the processed frame image
+                frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoGlasses.jpg"
+                frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
+                cv2.imwrite(frame_path, frame_image, [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+                frame_images_data.append({
+                    'frame_number': frame_number,
+                    'frame_image_path': frame_path,
+                    'class_id': 'No Glasses',
+                    'timestamp': no_glasses_timestamp
                 })
     response = {
         'frame_images': frame_images_data
