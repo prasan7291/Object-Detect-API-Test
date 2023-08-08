@@ -37,6 +37,8 @@ from flask import Flask, render_template, Response, jsonify, request, session, u
 from werkzeug.utils import secure_filename, redirect
 import moviepy
 import itertools
+import time
+from datetime import datetime
 
 
 #------------------------------------
@@ -272,9 +274,9 @@ def detect_fun():
 
                 # Calculate timestamp based on frame number and frame rate
                 no_coverall_frame_numbers.append(frame_number)
-                no_coverall_timestamp = sum([1 / fps for frame_num in no_coverall_frame_numbers])
+                no_coverall_timestamp = time.time()
+                no_coverall_formatted_timestamp = datetime.fromtimestamp(no_coverall_timestamp).strftime('%Y-%m-%d %I:%M:%S %p')
 
-                print("Timestamp in seconds: ",no_coverall_timestamp)
                 # Save the processed frame image
                 frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoCoverall.jpg"
                 frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
@@ -284,7 +286,7 @@ def detect_fun():
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
                     'class_id': 'No Coverall',
-                    'timestamp': no_coverall_timestamp
+                    'timestamp': no_coverall_formatted_timestamp
                 })
 
             if int(no_gloves_count) > 0:
@@ -292,9 +294,10 @@ def detect_fun():
 
                 # Calculate timestamp based on frame number and frame rate
                 no_gloves_frame_numbers.append(frame_number)
-                no_gloves_timestamp = sum([1 / fps for frame_num in no_gloves_frame_numbers])
+                no_gloves_timestamp = time.time()
+                no_gloves_formatted_timestamp = datetime.fromtimestamp(no_gloves_timestamp).strftime(
+                    '%Y-%m-%d %I:%M:%S %p')
 
-                print ("No Gloves Timestamp: ", no_gloves_timestamp)
                 # Save the processed frame image
                 frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoGloves.jpg"
                 frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
@@ -304,7 +307,7 @@ def detect_fun():
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
                     'class_id': 'No Gloves',
-                    'timestamp': no_gloves_timestamp
+                    'timestamp': no_gloves_formatted_timestamp
                 })
 
             if int(no_glasses_count) > 0:
@@ -312,9 +315,10 @@ def detect_fun():
 
                 # Calculate timestamp based on frame number and frame rate
                 no_glasses_frame_numbers.append(frame_number)
-                no_glasses_timestamp = sum([1 / fps for frame_num in no_glasses_frame_numbers])
+                no_glasses_timestamp = time.time()
+                no_glasses_formatted_timestamp = datetime.fromtimestamp(no_glasses_timestamp).strftime(
+                    '%Y-%m-%d %I:%M:%S %p')
 
-                print ("No Glasses Timestamp: ", no_glasses_timestamp)
                 # Save the processed frame image
                 frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoGlasses.jpg"
                 frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
@@ -324,7 +328,7 @@ def detect_fun():
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
                     'class_id': 'No Glasses',
-                    'timestamp': no_glasses_timestamp
+                    'timestamp': no_glasses_formatted_timestamp
                 })
     response = {
         'frame_images': frame_images_data
