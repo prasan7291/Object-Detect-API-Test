@@ -26,7 +26,7 @@ import cv2
 
 # Hubconfcustom is the python file which contains the code for our object detection model
 #Video Detection is the Function which performs Object Detection on Input Video
-from hubconfCustom import video_detection
+from hubconfCustom import video_detection, zone_detection
 
 #Video_detection_web is the functon which performs object detection on Live Feed
 from hubconfcustomweb import video_detection_web
@@ -205,7 +205,7 @@ def size_fun():
 
 frames_with_safety_violations = []
 
-def capture_screenshot(video_path, frame_number, yolo_output):
+'''def capture_screenshot(video_path, frame_number, yolo_output):
     video_capture = cv2.VideoCapture(video_path)
     video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
     ret, frame = video_capture.read()
@@ -225,7 +225,7 @@ def capture_screenshot(video_path, frame_number, yolo_output):
         return screenshot_path, frame_time  # Return screenshot_path and frame_time
     else:
         print(f"Error capturing screenshot for frame {frame_number}")
-        return None, None  # Return None values in case of error
+        return None, None  # Return None values in case of error'''
 
 @app.route('/detectionCount', methods=['POST'])
 def detect_fun():
@@ -247,14 +247,6 @@ def detect_fun():
     no_gloves_frame_numbers = []
     no_glasses_frame_numbers = []
 
-    # Get the total number of frames in the video
-    video = cv2.VideoCapture(video_file_path)
-    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = int(video.get(cv2.CAP_PROP_FPS))
-    print("FPS: ", fps)
-    video.release()
-
-    print ("Total Number of Frames: ", total_frames)
     for frame_number, (frame_image, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts, no_glasses_count) in enumerate(yolo_output):
         frames = str(FPS_)
         sizeImage = str(xl)
@@ -301,7 +293,7 @@ def detect_fun():
                 # Save the processed frame image
                 frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoGloves.jpg"
                 frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
-                cv2.imwrite(frame_path, frame_image, [cv2.IMWRITE_JPEG_QUALITY, 100])
+                cv2.imwrite(frame_path, frame_image, [cv2.IMWRITE_JPEG_QUALITY, 90])
 
                 frame_images_data.append({
                     'frame_number': frame_number,
@@ -421,6 +413,66 @@ def split_video_details():
     print("Files and Durations: ", files_and_durations)
     return jsonify(file_parts=files_and_durations)
 
+@app.route('/zoneDetection', methods=['POST'])
+def zone_detect():
+    global frames_with_safety_violations  # Declare the global variable
+    # Get the uploaded video file
+    video_file = request.files.get('video')
+    if not video_file:
+        return jsonify(message="Please upload a video first.")
+
+    # Save the uploaded video file to a specific location
+    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
+    video_file.save(video_file_path)
+
+    # Open the video to get the number of frames
+    video = cv2.VideoCapture(video_file_path)
+    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))  # Get the total number of frames in the video
+    video.release()  # Release the video object
+    print("NUmber of Frames: ", total_frames)
+
+    # Perform object detection on the video
+    zone_detect_output = zone_detection(video_file_path, conf_=0.5, warning_threshold=120)
+    frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
+    frame_images_data = []
+    warning_frame_numbers = []
+
+    for frame_number, (
+    frame_image, FPS_, xl, warning_count, total_violations) in enumerate(zone_detect_output):
+        print(f"Processing frame {frame_number + 1}/{total_frames}")
+        frames = str(FPS_)
+        sizeImage = str(xl)
+        warning_count = str(warning_count)
+        total_violations = str(total_violations)
+
+        if int(total_violations) > 0:
+            frames_with_safety_violations.setdefault('detectCount', []).append(frame_number)
+            if int(warning_count) > 0:
+                frames_with_safety_violations.setdefault('WarningCount', []).append(frame_number)
+
+                # Calculate timestamp based on frame number and frame rate
+                warning_frame_numbers.append(frame_number)
+                warning_timestamp = time.time()
+                warning_formatted_timestamp = datetime.fromtimestamp(warning_timestamp).strftime(
+                    '%Y-%m-%d %I:%M:%S %p')
+
+                # Save the processed frame image
+                frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_Warning.jpg"
+                frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
+                cv2.imwrite(frame_path, frame_image, [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+                frame_images_data.append({
+                    'frame_number': frame_number,
+                    'frame_image_path': frame_path,
+                    'class_id': 'Warning',
+                    'timestamp': warning_formatted_timestamp
+                })
+
+    response = {
+        'frame_images': frame_images_data
+    }
+
+    return jsonify(response)
 
 if __name__ == "__main__":
     app.run(debug=True,host='0.0.0.0', port=80)
