@@ -405,7 +405,7 @@ def zone_detect():
     # Get the uploaded video file
     video_file_path = request.form.get('video_path')
     video_file = request.files.get('video')
-    if not video_file:
+    if not video_file_path:
         return jsonify(message="Please upload a video first.")
 
     # Save the uploaded video file to a specific location
