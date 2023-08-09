@@ -397,7 +397,7 @@ def split_video():
 @app.route('/split_video_details', methods=['GET'])
 @cross_origin(supports_credentials=True)
 def split_video_details():
-    output_folder = os.path.join(app.config['UPLOAD_FOLDER'], "Split Videos")
+    output_folder = os.path.join(app.config['UPLOAD_FOLDER'], "Split_Videos")
     print("Output Folder: ", output_folder)
     files_and_durations = []
     ip_address = request.url_root
@@ -408,14 +408,14 @@ def split_video_details():
             file_path = os.path.join(output_folder, filename)
             duration_in_secs = VideoFileClip(file_path).duration
             duration_in_mins = round(duration_in_secs / 60, 2)
-            file_url = url_for('static', filename=os.path.join('files', 'Split Videos', filename))
+            file_url = url_for('static', filename=os.path.join('files', 'Split_Videos', filename))
             print("File URL: ", file_url)
             file_url_with_ip = ip_address + file_url
             thumbnail_name = file_url_with_ip.replace(".mp4", "_thumbnail.jpg")  # Generate the thumbnail filename
 
             # Split the filename based on "_ Part"
             parent_file_name = filename.split("_ Part")[0].rsplit('_', 1)[0].strip()  # Extract the parent file name from the filename
-            parent_file_url_with_ip = ip_address + url_for('static', filename=os.path.join('files', 'Split Videos',
+            parent_file_url_with_ip = ip_address + url_for('static', filename=os.path.join('files', 'Split_Videos',
                                                                                            parent_file_name + ".mp4"))
             print("Parent File Name: ",parent_file_name)
             files_and_durations.append({
