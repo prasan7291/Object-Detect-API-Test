@@ -205,39 +205,18 @@ def size_fun():
 
 frames_with_safety_violations = []
 
-'''def capture_screenshot(video_path, frame_number, yolo_output):
-    video_capture = cv2.VideoCapture(video_path)
-    video_capture.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
-    ret, frame = video_capture.read()
-
-    if ret:
-        screenshot_folder = os.path.join(app.config['UPLOAD_FOLDER'], "Processed Video Data")
-        os.makedirs(screenshot_folder, exist_ok=True)
-
-        screenshot_filename = f"{os.path.splitext(os.path.basename(video_path))[0]}_{frame_number}.jpg"
-        screenshot_path = os.path.join(screenshot_folder, screenshot_filename)
-
-        cv2.imwrite(screenshot_path, frame)
-        print(f"Screenshot saved: {screenshot_path}")
-
-        _, FPS_, xl, _, _, _, _, _ = next(itertools.islice(yolo_output, frame_number, None))
-        frame_time = frame_number / float(FPS_)  # Calculate time in the video for the frame
-        return screenshot_path, frame_time  # Return screenshot_path and frame_time
-    else:
-        print(f"Error capturing screenshot for frame {frame_number}")
-        return None, None  # Return None values in case of error'''
-
 @app.route('/detectionCount', methods=['POST'])
 def detect_fun():
     global frames_with_safety_violations  # Declare the global variable
     # Get the uploaded video file
+    video_file_path = request.form.get('video_path')
     video_file = request.files.get('video')
-    if not video_file:
+    if not video_file_path:
         return jsonify(message="Please upload a video first.")
 
     # Save the uploaded video file to a specific location
-    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
-    video_file.save(video_file_path)
+    #video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
+    #video_file.save(video_file_path)
 
     # Perform object detection on the video
     yolo_output = video_detection(video_file_path, conf_=0.35)
@@ -246,6 +225,13 @@ def detect_fun():
     no_coverall_frame_numbers = []
     no_gloves_frame_numbers = []
     no_glasses_frame_numbers = []
+
+    #Get the parent directory of the video file
+    parent_directory = os.path.dirname(video_file_path)
+
+    # Create the "Processed Video Data" folder if it doesn't exist
+    processed_data_folder = os.path.join(parent_directory, "Processed Video Data")
+    os.makedirs(processed_data_folder, exist_ok=True)
 
     for frame_number, (frame_image, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts, no_glasses_count) in enumerate(yolo_output):
         frames = str(FPS_)
@@ -355,10 +341,10 @@ def split_video_into_chunks(video_path, parent_filename):
         start_time = i * chunk_duration
         end_time = min((i + 1) * chunk_duration, duration)
         subclip = video_file.subclip(start_time, end_time)
-        output_filename = os.path.join(output_folder, f"{os.path.splitext(parent_filename)[0]}_Part {i + 1}.mp4")
+        output_filename = os.path.join(output_folder, f"{os.path.splitext(parent_filename)[0]}_Part_{i + 1}.mp4")
         subclip.write_videofile(output_filename, codec='libx264')
 
-        thumbnail_filename = f"{os.path.splitext(parent_filename)[0]}_Part {i + 1}_thumbnail.jpg"
+        thumbnail_filename = f"{os.path.splitext(parent_filename)[0]}_Part_{i + 1}_thumbnail.jpg"
         thumbnail_path = os.path.join(output_folder, thumbnail_filename)
         thumbnail_image = subclip.get_frame(0)  # Get the first frame of the video part as the thumbnail
         Image.fromarray(thumbnail_image).save(thumbnail_path)
@@ -417,13 +403,14 @@ def split_video_details():
 def zone_detect():
     global frames_with_safety_violations  # Declare the global variable
     # Get the uploaded video file
+    video_file_path = request.form.get('video_path')
     video_file = request.files.get('video')
     if not video_file:
         return jsonify(message="Please upload a video first.")
 
     # Save the uploaded video file to a specific location
-    video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
-    video_file.save(video_file_path)
+    #video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
+    #video_file.save(video_file_path)
 
     # Open the video to get the number of frames
     video = cv2.VideoCapture(video_file_path)
