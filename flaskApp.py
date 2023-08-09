@@ -40,6 +40,10 @@ import itertools
 import time
 from datetime import datetime
 
+from flask_cors import CORS, cross_origin
+app = Flask(__name__)
+CORS(app, support_credentials=True)
+
 
 #------------------------------------
 #------------------------------------
@@ -391,6 +395,7 @@ def split_video():
     # Return JSON response
     return jsonify(message="Video split into chunks successfully.")
 @app.route('/split_video_details', methods=['GET'])
+@cross_origin(supports_credentials=True)
 def split_video_details():
     output_folder = os.path.join(app.config['UPLOAD_FOLDER'], "Split Videos")
     print("Output Folder: ", output_folder)
