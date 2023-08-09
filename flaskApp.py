@@ -209,30 +209,30 @@ frames_with_safety_violations = []
 def detect_fun():
     global frames_with_safety_violations  # Declare the global variable
     # Get the uploaded video file
-    video_url = request.form.get('video_path')
+    video_file_path = request.form.get('video_path')
+    #video_url = request.form.get('video_path')
     #video_file = request.files.get('video')
-    if not video_url:
+    if not video_file_path:
         return jsonify(message="Please upload a video first.")
 
-    video_file_path = video_url.replace("http://", "").split("/", 1)[-1]
+    #video_file_path = video_url.replace("http://", "").split("/", 1)[-1]
 
     # Modify the video path to match the desired format
-    video_file_path = video_file_path.lstrip("/").replace("%20", " ")
+    #video_file_path = video_file_path.lstrip("/").replace("%20", " ")
 
     # Get the absolute path of the script's parent directory
-    script_directory = os.path.dirname(os.path.abspath(__file__))
+    #script_directory = os.path.dirname(os.path.abspath(__file__))
 
     # Join the script's parent directory with the modified video path
-    absolute_video_file_path = os.path.join(script_directory, video_file_path)
+    #absolute_video_file_path = os.path.join(script_directory, video_file_path)
 
     # Replace forward slashes with backslashes in the absolute video file path
-    absolute_video_file_path = absolute_video_file_path.replace("/", "\\")
-    print("New Video File Path: ", absolute_video_file_path)
-
+    #absolute_video_file_path = absolute_video_file_path.replace("/", "\\")
+    #print("New Video File Path: ", absolute_video_file_path)
 
     # Check if the video file exists
-    if not os.path.exists(absolute_video_file_path):
-        return jsonify(message="Video file not found.")
+    #if not os.path.exists(video_file_path):
+        #return jsonify(message="Video file not found.")
 
 
     # Save the uploaded video file to a specific location
@@ -240,7 +240,7 @@ def detect_fun():
     #video_file.save(video_file_path)
 
     # Perform object detection on the video
-    yolo_output = video_detection(absolute_video_file_path, conf_=0.35)
+    yolo_output = video_detection(video_file_path, conf_=0.35)
     frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
     frame_images_data = []
     no_coverall_frame_numbers = []
@@ -249,7 +249,7 @@ def detect_fun():
 
     #Get the parent directory of the video file
     #parent_directory = os.path.dirname(absolute_video_file_path)
-    parent_directory = os.path.join(app.config['UPLOAD_FOLDER'], "Processed Video Data")
+    parent_directory = os.path.join(app.config['UPLOAD_FOLDER'], "Processed_Video_Data")
     print("Parent Directory: ", parent_directory)
 
     # Create the "Processed Video Data" folder if it doesn't exist
@@ -282,7 +282,7 @@ def detect_fun():
 
                 # Save the processed frame image
                 frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoCoverall.jpg"
-                frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
+                frame_path = os.path.join("static/files/Processed_Video_Data", frame_filename)
                 cv2.imwrite(frame_path, frame_image, [cv2.IMWRITE_JPEG_QUALITY, 100])
 
                 frame_images_data.append({
@@ -303,7 +303,7 @@ def detect_fun():
 
                 # Save the processed frame image
                 frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoGloves.jpg"
-                frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
+                frame_path = os.path.join("static/files/Processed_Video_Data", frame_filename)
                 cv2.imwrite(frame_path, frame_image, [cv2.IMWRITE_JPEG_QUALITY, 90])
 
                 frame_images_data.append({
@@ -324,7 +324,7 @@ def detect_fun():
 
                 # Save the processed frame image
                 frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_NoGlasses.jpg"
-                frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
+                frame_path = os.path.join("static/files/Processed_Video_Data", frame_filename)
                 cv2.imwrite(frame_path, frame_image, [cv2.IMWRITE_JPEG_QUALITY, 100])
 
                 frame_images_data.append({
@@ -359,7 +359,7 @@ def split_video_into_chunks(video_path, parent_filename):
     duration = video_file.duration
     chunk_duration = 1 * 60  # 5 minutes in seconds
     num_chunks = int(math.ceil(duration / chunk_duration))
-    output_folder = os.path.join(os.path.dirname(video_path), "Split Videos")
+    output_folder = os.path.join(os.path.dirname(video_path), "Split_Videos")
     os.makedirs(output_folder, exist_ok=True)
 
     for i in range(num_chunks):
@@ -428,44 +428,44 @@ def split_video_details():
 def zone_detect():
     global frames_with_safety_violations  # Declare the global variable
     # Get the uploaded video file
-    video_url = request.form.get('video_path')
+    video_file_path = request.form.get('video_path')
     #video_file = request.files.get('video')
-    if not video_url:
+    if not video_file_path:
         return jsonify(message="Please upload a video first.")
 
-    video_file_path = video_url.replace("http://", "").split("/", 1)[-1]
+    #video_file_path = video_url.replace("http://", "").split("/", 1)[-1]
 
     # Modify the video path to match the desired format
-    video_file_path = video_file_path.lstrip("/").replace("%20", " ")
+    #video_file_path = video_file_path.lstrip("/").replace("%20", " ")
 
     # Get the absolute path of the script's parent directory
-    script_directory = os.path.dirname(os.path.abspath(__file__))
+    #script_directory = os.path.dirname(os.path.abspath(__file__))
 
     # Join the script's parent directory with the modified video path
-    absolute_video_file_path = os.path.join(script_directory, video_file_path)
+    #absolute_video_file_path = os.path.join(script_directory, video_file_path)
 
     # Replace forward slashes with backslashes in the absolute video file path
-    absolute_video_file_path = absolute_video_file_path.replace("/", "\\")
-    print("New Video File Path: ", absolute_video_file_path)
+    #absolute_video_file_path = absolute_video_file_path.replace("/", "\\")
+    #print("New Video File Path: ", absolute_video_file_path)
 
     # Save the uploaded video file to a specific location
     #video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
     #video_file.save(video_file_path)
 
     # Open the video to get the number of frames
-    video = cv2.VideoCapture(absolute_video_file_path)
+    video = cv2.VideoCapture(video_file_path)
     total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))  # Get the total number of frames in the video
     video.release()  # Release the video object
     print("NUmber of Frames: ", total_frames)
 
     # Perform object detection on the video
-    zone_detect_output = zone_detection(absolute_video_file_path, conf_=0.5, warning_threshold=120)
+    zone_detect_output = zone_detection(video_file_path, conf_=0.5, warning_threshold=120)
     frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
     frame_images_data = []
     warning_frame_numbers = []
 
     # Get the parent directory of the video file
-    parent_directory = os.path.join(app.config['UPLOAD_FOLDER'], "Processed Video Data")
+    parent_directory = os.path.join(app.config['UPLOAD_FOLDER'], "Processed_Video_Data")
     print("Parent Directory: ", parent_directory)
 
     # Create the "Processed Video Data" folder if it doesn't exist
@@ -495,7 +495,7 @@ def zone_detect():
 
                 # Save the processed frame image
                 frame_filename = f"{os.path.splitext(os.path.basename(video_file_path))[0]}_{frame_number}_Warning.jpg"
-                frame_path = os.path.join("static/files/Processed Video Data", frame_filename)
+                frame_path = os.path.join("static/files/Processed_Video_Data", frame_filename)
                 cv2.imwrite(frame_path, frame_image, [cv2.IMWRITE_JPEG_QUALITY, 100])
 
                 frame_images_data.append({
@@ -512,4 +512,4 @@ def zone_detect():
     return jsonify(response)
 
 if __name__ == "__main__":
-    app.run(debug=True,host='0.0.0.0', port=80)
+    app.run(debug=True,host='0.0.0.0', port=81)
