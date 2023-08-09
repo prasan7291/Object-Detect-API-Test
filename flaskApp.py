@@ -209,17 +209,38 @@ frames_with_safety_violations = []
 def detect_fun():
     global frames_with_safety_violations  # Declare the global variable
     # Get the uploaded video file
-    video_file_path = request.form.get('video_path')
-    video_file = request.files.get('video')
-    if not video_file_path:
+    video_url = request.form.get('video_path')
+    #video_file = request.files.get('video')
+    if not video_url:
         return jsonify(message="Please upload a video first.")
+
+    video_file_path = video_url.replace("http://", "").split("/", 1)[-1]
+
+    # Modify the video path to match the desired format
+    video_file_path = video_file_path.lstrip("/").replace("%20", " ")
+
+    # Get the absolute path of the script's parent directory
+    script_directory = os.path.dirname(os.path.abspath(__file__))
+
+    # Join the script's parent directory with the modified video path
+    absolute_video_file_path = os.path.join(script_directory, video_file_path)
+
+    # Replace forward slashes with backslashes in the absolute video file path
+    absolute_video_file_path = absolute_video_file_path.replace("/", "\\")
+    print("New Video File Path: ", absolute_video_file_path)
+
+
+    # Check if the video file exists
+    if not os.path.exists(absolute_video_file_path):
+        return jsonify(message="Video file not found.")
+
 
     # Save the uploaded video file to a specific location
     #video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
     #video_file.save(video_file_path)
 
     # Perform object detection on the video
-    yolo_output = video_detection(video_file_path, conf_=0.35)
+    yolo_output = video_detection(absolute_video_file_path, conf_=0.35)
     frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
     frame_images_data = []
     no_coverall_frame_numbers = []
@@ -227,10 +248,14 @@ def detect_fun():
     no_glasses_frame_numbers = []
 
     #Get the parent directory of the video file
-    parent_directory = os.path.dirname(video_file_path)
+    #parent_directory = os.path.dirname(absolute_video_file_path)
+    parent_directory = os.path.join(app.config['UPLOAD_FOLDER'], "Processed Video Data")
+    print("Parent Directory: ", parent_directory)
 
     # Create the "Processed Video Data" folder if it doesn't exist
-    processed_data_folder = os.path.join(parent_directory, "Processed Video Data")
+    #processed_data_folder = os.path.join(parent_directory, "Processed Video Data")
+    processed_data_folder = parent_directory
+    print("Processed Data Folder: ", processed_data_folder)
     os.makedirs(processed_data_folder, exist_ok=True)
 
     for frame_number, (frame_image, FPS_, xl, no_coverall_count, no_helmet_count, no_gloves_count, total_safety_violations, class_counts, no_glasses_count) in enumerate(yolo_output):
@@ -403,26 +428,51 @@ def split_video_details():
 def zone_detect():
     global frames_with_safety_violations  # Declare the global variable
     # Get the uploaded video file
-    video_file_path = request.form.get('video_path')
-    video_file = request.files.get('video')
-    if not video_file_path:
+    video_url = request.form.get('video_path')
+    #video_file = request.files.get('video')
+    if not video_url:
         return jsonify(message="Please upload a video first.")
+
+    video_file_path = video_url.replace("http://", "").split("/", 1)[-1]
+
+    # Modify the video path to match the desired format
+    video_file_path = video_file_path.lstrip("/").replace("%20", " ")
+
+    # Get the absolute path of the script's parent directory
+    script_directory = os.path.dirname(os.path.abspath(__file__))
+
+    # Join the script's parent directory with the modified video path
+    absolute_video_file_path = os.path.join(script_directory, video_file_path)
+
+    # Replace forward slashes with backslashes in the absolute video file path
+    absolute_video_file_path = absolute_video_file_path.replace("/", "\\")
+    print("New Video File Path: ", absolute_video_file_path)
 
     # Save the uploaded video file to a specific location
     #video_file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(video_file.filename))
     #video_file.save(video_file_path)
 
     # Open the video to get the number of frames
-    video = cv2.VideoCapture(video_file_path)
+    video = cv2.VideoCapture(absolute_video_file_path)
     total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))  # Get the total number of frames in the video
     video.release()  # Release the video object
     print("NUmber of Frames: ", total_frames)
 
     # Perform object detection on the video
-    zone_detect_output = zone_detection(video_file_path, conf_=0.5, warning_threshold=120)
+    zone_detect_output = zone_detection(absolute_video_file_path, conf_=0.5, warning_threshold=120)
     frames_with_safety_violations = {}  # Reset the frames_with_safety_violations dictionary
     frame_images_data = []
     warning_frame_numbers = []
+
+    # Get the parent directory of the video file
+    parent_directory = os.path.join(app.config['UPLOAD_FOLDER'], "Processed Video Data")
+    print("Parent Directory: ", parent_directory)
+
+    # Create the "Processed Video Data" folder if it doesn't exist
+    # processed_data_folder = os.path.join(parent_directory, "Processed Video Data")
+    processed_data_folder = parent_directory
+    print("Processed Data Folder: ", processed_data_folder)
+    os.makedirs(processed_data_folder, exist_ok=True)
 
     for frame_number, (
     frame_image, FPS_, xl, warning_count, total_violations) in enumerate(zone_detect_output):
