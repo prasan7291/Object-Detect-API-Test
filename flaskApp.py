@@ -210,6 +210,7 @@ def size_fun():
 frames_with_safety_violations = []
 
 @app.route('/detectionCount', methods=['POST'])
+@cross_origin(supports_credentials=True)
 def detect_fun():
     global frames_with_safety_violations  # Declare the global variable
     # Get the uploaded video file
@@ -335,6 +336,7 @@ def detect_fun():
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
                     'class_id': 'No Glasses',
+                    'detection_type': 'ppe',
                     'timestamp': no_glasses_formatted_timestamp
                 })
     response = {
@@ -381,6 +383,7 @@ def split_video_into_chunks(video_path, parent_filename):
     print(f"Video split into {num_chunks} parts.")
 
 @app.route('/split_video', methods=['GET','POST'])
+@cross_origin(supports_credentials=True)
 def split_video():
     video_file = request.files.get('file')
     if not video_file:
@@ -430,6 +433,7 @@ def split_video_details():
     return jsonify(file_parts=files_and_durations)
 
 @app.route('/zoneDetection', methods=['POST'])
+@cross_origin(supports_credentials=True)
 def zone_detect():
     global frames_with_safety_violations  # Declare the global variable
     # Get the uploaded video file
@@ -507,6 +511,7 @@ def zone_detect():
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
                     'class_id': 'Warning',
+                    'detection_type': 'zone',
                     'timestamp': warning_formatted_timestamp
                 })
 
