@@ -294,6 +294,7 @@ def detect_fun():
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
                     'class_id': 'No Coverall',
+                    'detection_type': 'ppe',
                     'timestamp': no_coverall_formatted_timestamp
                 })
 
@@ -315,6 +316,7 @@ def detect_fun():
                     'frame_number': frame_number,
                     'frame_image_path': frame_path,
                     'class_id': 'No Gloves',
+                    'detection_type': 'ppe',
                     'timestamp': no_gloves_formatted_timestamp
                 })
 
