@@ -365,7 +365,7 @@ def split_video_into_chunks(video_path, parent_filename):
     print("split_video_into_chunks function RAN!!!!")
     video_file = VideoFileClip(video_path)
     duration = video_file.duration
-    chunk_duration = 1 * 60  # 5 minutes in seconds
+    chunk_duration = 0.5 * 60  # 5 minutes in seconds
     num_chunks = int(math.ceil(duration / chunk_duration))
     output_folder = os.path.join(os.path.dirname(video_path), "Split_Videos")
     os.makedirs(output_folder, exist_ok=True)
