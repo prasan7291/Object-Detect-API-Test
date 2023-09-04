@@ -1,6 +1,6 @@
 1) Create a file called classes.txt and enter all the classes that you want detected in it
 2) Save the file in the folder containing the training images
 3) Navigate to the root folder containing the "Dataset" folder
-4) Use the command "labelimg Dataset Dataset\classes.txt" and press enter
+4) Use the command "labelimg <path that contains images> <path that contains classes.txt file" and press enter
 
 NOTE: Labelimg only works with python 3.9.x version
