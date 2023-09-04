@@ -1,0 +1,8 @@
+Dataset splitting 
+
+1) Dataset is split into two parts "Training" and "Testing"
+2) Open command prompt and navigate to the "data" folder in the root directory of the project 
+Eg: cd C:\Object-Detect-API-Test\data
+3) Use command "python data\split_dataset.py --folder <path to folder containing labelled images> --train 80 --validation 10 --test 10 --dest <path to store folder in>
+eg: python split_dataset.py --folder C:\Object-Detect-API-Test\Dataset --train 80 --validation 10 --test 10 --dest C:\Object-Detect-API-Test\Dataset\Split_Dataset
+
