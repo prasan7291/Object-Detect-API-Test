@@ -6,3 +6,22 @@ Eg: cd C:\Object-Detect-API-Test\data
 3) Use command "python data\split_dataset.py --folder <path to folder containing labelled images> --train 80 --validation 10 --test 10 --dest <path to store folder in>
 eg: python split_dataset.py --folder C:\Object-Detect-API-Test\Dataset --train 80 --validation 10 --test 10 --dest C:\Object-Detect-API-Test\Dataset\Split_Dataset
 
+4) Create a coco.yaml in the "data" folder and rename it appropriately "Eg: safety_detection.yaml"
+
+5) Open the newly created file in an environment like Notepad or Visual Studio and edit lines train:..., val:..., test:... to point to the newly created split dataset folders in step 3
+
+6) In the same file edit the value of nc: to reflect the number of classes defined in classes.txt
+
+7) In the names array, make sure that all the classes in the array match the classes defined in classes.txt
+
+8) Navigate to the cfg/training folder in the root directory of the project
+
+9) Create a copy of yolov7.yaml in the same folder and rename it appropriately
+
+10) Open the newly created file in a compatible enviroment and edit line #2 nc: parameter to match what was entered in stpe 6 and make sure it matches with the number of classes in classes.txt as well
+
+11) Go back to the root directory in the command prompt and use the command
+"python train.py --workers 0 --batch-size 4 --device cpu (or 0 if gpu is used) --data <path to folder containing yaml file created in step 4> --img 640 640 --cfg <path to yaml file created in step 9> --weights yolov7_training.pt --name <name of folder where training data should be stored> --hyp data\hyp.scratch.custom.yaml"
+
+eg: python train.py --workers 0 --batch-size 4 --device cpu --data "C:\Object-Detect-API-Test\data\SafeVision_Detect.yaml"  --img 640 640 --cfg "C:\Object-Detect-API-Test\cfg\training\SafeVision_Detect_cfg.yaml" --weights yolovy_training.pt --name Safety_Detection --hyp data\hyp.scratch.custom.yaml
+
