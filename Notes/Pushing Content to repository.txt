@@ -1,0 +1,51 @@
+C:\SafeVision>git add "Notes/Install CUDA in Windows for NVIDIA GPU.docx"
+
+C:\SafeVision>git commit -m "Updating installation instructions text to have the command for installing CUDA 11.7"
+[main 77d6f71] Updating installation instructions text to have the command for installing CUDA 11.7
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+C:\SafeVision>git push -u origin main
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 12 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 2.41 KiB | 2.41 MiB/s, done.
+Total 4 (delta 1), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (1/1), completed with 1 local object.
+To https://github.com/prasan7291/SafeVision.git
+   1703e99..77d6f71  main -> main
+branch 'main' set up to track 'origin/main'.
+
+C:\SafeVision>git pull
+remote: Enumerating objects: 7, done.
+remote: Counting objects: 100% (7/7), done.
+remote: Compressing objects: 100% (4/4), done.
+remote: Total 4 (delta 0), reused 4 (delta 0), pack-reused 0
+Unpacking objects: 100% (4/4), 3.64 KiB | 933.00 KiB/s, done.
+From https://github.com/prasan7291/SafeVision
+   77d6f71..3c00d9c  main       -> origin/main
+Updating 77d6f71..3c00d9c
+Fast-forward
+ Notes/Install CUDA in Windows for NVIDIA GPU.docx | Bin 8124 -> 3754 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+C:\SafeVision>python --version
+Python 3.10.11
+
+C:\SafeVision>cd..
+
+C:\>git clone https://github.com/prasan7291/Skill_Development.git
+Cloning into 'Skill_Development'...
+remote: Enumerating objects: 3, done.
+remote: Counting objects: 100% (3/3), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 3 (delta 0), reused 0 (delta 0), pack-reused 0
+Receiving objects: 100% (3/3), done.
+
+
+----------------------- TO DELETE STUFF AND PUSH TO REPOSITORY -------------------
+1) Navigate to the desired git hub repo folder using the command cd <folder_name>
+2) Run rmdir /s /q <folder>
+3) Run git rm <folder> -r 
+4) git commit -m "Delete <folder>"
+5) git push
