@@ -11,3 +11,4 @@ Safety Glasses
 No Safety Glasses
 Person
 Harness
+No Harness
